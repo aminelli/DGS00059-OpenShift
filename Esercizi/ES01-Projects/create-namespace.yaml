@@ -1,0 +1,7 @@
+kind: Project
+apiVersion: project.openshift.io/v1
+metadata:
+  name: prj-test
+  annotations:
+    openshift.io/description: prj-test
+    openshift.io/display-name: prj-test
