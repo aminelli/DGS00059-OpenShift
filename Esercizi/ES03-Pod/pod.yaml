@@ -6,13 +6,12 @@ metadata:
   labels:
     app: pod-test
     env: prod
-  spec:
-    containers:
-    - name: pod-cnt-test
-      image: docker.io/hazelcast/hazelcast:5.1.7
-      #image: docker.io/aminelli/web_app_spring:v2.0
-      env:
-      - name: DNS_DOMAIN
-        value: cluster
-      ports:
-      - containerPort: 5701
+spec:
+  containers:
+  - name: pod-cnt-test
+    image: docker.io/hazelcast/hazelcast:5.1.7
+    env:
+    - name: DNS_DOMAIN
+      value: cluster
+    ports:
+    - containerPort: 5701
