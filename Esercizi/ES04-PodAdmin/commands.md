@@ -20,7 +20,10 @@ nano ~/.bashrc
 export API_SERVER=
 export KUBE_VAR=
 
+# Applica subito senza riavviare
+source ~/.bashrc
 
-
+# OC Login
+oc login $API_SERVER --username kubeadmin --password $KUBE_VAR
 
 ```
