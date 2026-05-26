@@ -1,0 +1,119 @@
+# =========================================================================
+# Creazione piano di deployment con replicaset a 3 repliche, 
+# con rolling update e probe di avvio, liveness e readiness
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app-deploy
+  namespace: prj-antonio-minelli
+  labels:
+    app: spring-app
+    env: prod
+    ver: "v2.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-app
+      env: prod
+      ver: "v2.0"
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Max 1 pon non disponibile durante l'aggiornamento
+      maxUnavailable: 1
+      # Max 1 pod extra durante l'aggiornamento
+      maxSurge: 1
+  template:
+    metadata:
+      name: spring-app-pod
+      labels:
+        app: spring-app
+        env: prod
+        ver: "v2.0"
+    spec:   
+      containers:
+        - name: spring-app-cnt
+          image: docker.io/aminelli/web_app_spring:v2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          # Variabili di ambiente
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m"
+          # Limiti su uso risorse
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+          # Probe di Avvio
+          # Attende che l'app sia pronta prima di considerare il pod "up"
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            failureThreshold: 3
+            periodSeconds: 5
+          # Probe di Liveness
+          # Verifica che l'app sia ancora in salute durante il funzionamento
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            failureThreshold: 3
+            periodSeconds: 5
+          # Probe di Readiness
+          # Indica quando il pod è pronto a ricevere traffico
+          # se non pronto, il traffico non viene inviato a questo pod
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            failureThreshold: 3
+            periodSeconds: 5
+      # Terminazione Gracefule
+      # garantiamo che il pod abbia tempo di chiudere correttamente le connessioni
+      #e liberare risorse prima di essere terminato
+      terminationGracePeriodSeconds: 30
+
+---
+
+# =========================================================================
+# Service per l'esposizione dei pods
+# =========================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-app-service
+  namespace: prj-antonio-minelli
+  labels:
+    app: spring-app
+    env: prod
+spec:
+  type: ClusterIP
+  selector:
+    # Collega il service ai pod tramite match delle label
+    app: spring-app
+    env: prod
+    ver: "v2.0"
+  ports:
+    - name: http
+      # Porta del service, quella su cui i client si connettono 
+      # internamente al cluster
+      port: 80
+      # Porta dei container che ospitano in replica la nostra app
+      targetPort: 8080
+      protocol: TCP 
+
+

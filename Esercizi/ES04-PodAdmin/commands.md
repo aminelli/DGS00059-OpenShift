@@ -4,6 +4,7 @@
 # Installazione pacchetti
 apt-get update
 apt-get install -y wget curl nano net-tools iputils-ping iproute2 htop nano
+apt-get install -y git dnsutils
 
 # Installazione OC
 cd ~

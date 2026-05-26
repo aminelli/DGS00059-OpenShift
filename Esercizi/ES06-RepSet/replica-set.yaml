@@ -10,10 +10,13 @@ spec:
   selector:
     matchLabels:
       app: app-web
+      ver: v2.0
   template:
     metadata:
       labels:
         app: app-web
+        ver: v2.0
+        env: prod
     spec:
       containers:
         - name: app-web
