@@ -1,3 +1,7 @@
+# =========================================================================
+# Creazione piano di deployment con replicaset a 3 repliche, 
+# con rolling update e probe di avvio, liveness e readiness
+# =========================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,7 +21,9 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
+      # Max 1 pon non disponibile durante l'aggiornamento
       maxUnavailable: 1
+      # Max 1 pod extra durante l'aggiornamento
       maxSurge: 1
   template:
     metadata:
@@ -48,6 +54,39 @@ spec:
             requests:
               cpu: "250m"
               memory: "256Mi"
+          # Probe di Avvio
+          # Attende che l'app sia pronta prima di considerare il pod "up"
+          # startupProbe:
+          #   exec:
+          #     # command: ["curl", "-f", "http://localhost:8080/actuator/health/startup"]
+          #   httpGet:
+          #     path: /actuator/health
+          #     port: 8080
+          #   initialDelaySeconds: 10
+          #   failureThreshold: 3
+          #   periodSeconds: 5
+          # # Probe di Liveness
+          # # Verifica che l'app sia ancora in salute durante il funzionamento
+          # livenessProbe:
+          #   httpGet:
+          #     path: /actuator/health/liveness
+          #     port: 8080
+          #   initialDelaySeconds: 10
+          #   failureThreshold: 3
+          #   periodSeconds: 5
+          # # Probe di Readiness
+          # # Indica quando il pod è pronto a ricevere traffico
+          # # se non pronto, il traffico non viene inviato a questo pod
+          # readinessProbe:            
+          #   httpGet:
+          #     path: /actuator/health/readiness
+          #     port: 8080
+          #   initialDelaySeconds: 10
+          #   failureThreshold: 3
+          #   periodSeconds: 5
+      # Terminazione Gracefule
+      # garantiamo che il pod abbia tempo di chiudere correttamente le connessioni
+      #e liberare risorse prima di essere terminato
       terminationGracePeriodSeconds: 30
 
 ---
