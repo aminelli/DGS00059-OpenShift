@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: app-web-rs
+  namespace: prj-antonio-minelli
+  labels:
+    app: app-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-web
+  template:
+    metadata:
+      labels:
+        app: app-web
+    spec:
+      containers:
+        - name: app-web
+          image: aminelli/web_app_spring:v2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
