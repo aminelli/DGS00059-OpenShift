@@ -17,8 +17,8 @@ rm openshift-client-linux.tar.gz
 # Apri il file
 nano ~/.bashrc
 # e aggiungere alla fine:
-export API_SERVER=https://api.corsodgs00059.northeurope.aroapp.io:6443/
-export KUBE_VAR=vIoVH-Hh2R7-3yTGy-zfFP8
+export API_SERVER=
+export KUBE_VAR=
 
 
 
