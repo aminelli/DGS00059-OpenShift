@@ -4,7 +4,7 @@ metadata:
   name: webapp-pod
   namespace: prj-antonio-minelli
   labels:
-    app: webapp
+    app: web-app
 spec:
   containers:
     - name: web-app
