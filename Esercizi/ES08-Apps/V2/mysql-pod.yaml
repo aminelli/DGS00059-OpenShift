@@ -10,8 +10,13 @@ spec:
     - name: mysql-db
       image: docker.io/mysql:5.6
       env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "Password123"
+        #- name: MYSQL_ROOT_PASSWORD
+        #  value: "Password123"
+      - name: MYSQL_ROOT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: db-config-secret
+            key: DB_PASSWORD
       ports:
         - containerPort: 3306
           protocol: TCP
