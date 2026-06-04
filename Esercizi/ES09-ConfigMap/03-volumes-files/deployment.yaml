@@ -43,6 +43,8 @@ spec:
             - name: config-vol
               mountPath: /etc/config     # ogni chiave → un file in questa directory
               readOnly: true
+            - name: empty-dir
+              mountPath: /tmp/empty-dir  # volume temporaneo per testare la struttura interna del ConfigMap montato
           resources:
             requests:
               cpu: 50m
@@ -60,3 +62,5 @@ spec:
             #     path: application.properties   # nome file nel container
             #   - key: database.properties
             #     path: db/connection.properties  # con sotto-directory
+        - name : empty-dir
+          emptyDir: {}  # volume temporaneo per testare la struttura interna del ConfigMap montato
