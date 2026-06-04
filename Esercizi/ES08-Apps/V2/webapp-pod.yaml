@@ -10,8 +10,10 @@ spec:
     - name: web-app
       image: docker.io/bmuschko/web-app:1.0.1
       envFrom:
-        - configMapRef:
-            name: db-config
+      - configMapRef:
+          name: db-config
+      - secretRef:
+          name: db-config-secret
       ports:
         - containerPort: 3000
           protocol: TCP
