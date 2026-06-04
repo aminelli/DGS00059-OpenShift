@@ -32,6 +32,10 @@ spec:
             - name: nginx-conf
               mountPath: /usr/share/nginx/html/index.html
               subPath: index.html
+            - name: nginx-cache
+              mountPath: /var/cache/nginx 
+            - name: nginx-run
+              mountPath: /var/run
           resources:
             requests:
               cpu: 50m
@@ -43,6 +47,10 @@ spec:
         - name: nginx-conf
           configMap:
             name: nginx-custom-config
+        - name: nginx-cache
+          emptyDir: {}  # volume temporaneo per testare la struttura interna del ConfigMap montato
+        - name: nginx-run
+          emptyDir: {}  # volume temporaneo per testare la struttura interna del ConfigMap montato
 ---
 apiVersion: v1
 kind: Service
@@ -56,4 +64,4 @@ spec:
     app: nginx-custom
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080
