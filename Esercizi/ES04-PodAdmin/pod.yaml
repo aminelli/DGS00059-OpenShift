@@ -11,6 +11,8 @@ spec:
   - name: pod-admin
     image: docker.io/debian:trixie
     command: ["/bin/bash", "-c", "sleep infinity"]
+    securityContext:
+      privileged: true
 
 
 
