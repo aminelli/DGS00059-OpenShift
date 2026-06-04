@@ -21,7 +21,7 @@ metadata:
   labels:
     scenario: job-simple
 spec:
-  ttlSecondsAfterFinished: 300   # auto-cleanup dopo 5 minuti
+  ttlSecondsAfterFinished: 30   # auto-cleanup dopo 30 secondi
   backoffLimit: 3                # max tentativi in caso di fallimento
   template:
     metadata:
