@@ -31,7 +31,7 @@ spec:
         # Importa di nuovo con prefisso per isolare namespace di naming
         - configMapRef:
             name: app-config-envfrom
-            prefix: "CFG_"    # → CFG_APP_NAME, CFG_LOG_LEVEL, ...            
+          prefix: CFG_    # → CFG_APP_NAME, CFG_LOG_LEVEL, ...            
       resources:
         requests:
           cpu: 50m
