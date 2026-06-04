@@ -32,7 +32,7 @@ metadata:
   labels:
     scenario: cronjob-simple
 spec:
-  schedule: "*/2 * * * *"          # ogni 2 minuti
+  schedule: "*/1 * * * *"          # ogni 2 minuti
   timeZone: "Europe/Rome"          # timezone (Kubernetes >= 1.27)
   successfulJobsHistoryLimit: 3    # mantieni log degli ultimi 3 job ok
   failedJobsHistoryLimit: 1        # mantieni log dell'ultimo job fallito
