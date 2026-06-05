@@ -1,0 +1,141 @@
+# Scenario 04 — StorageClass + Dynamic Provisioning
+# Il provisioner standard-rwo di Kubernetes crea automaticamente i PV
+# quando un PVC viene richiesto.
+# Mostra anche: Deployment con PVC, ReadWriteMany con hostPath.
+
+---
+
+# StorageClass managed-csi — Azure Disk Premium LRS (default ARO)
+# Provisioner: disk.csi.azure.com
+# AccessModes supportati: ReadWriteOnce, ReadWriteOncePod
+# VolumeBindingMode: WaitForFirstConsumer
+#   → PVC rimane Pending finché un Pod non viene schedulato
+#   → Il disco viene creato nella stessa Availability Zone del nodo
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: managed-csi-premium
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"   # Non impostare come default se managed-csi lo è già
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Premium_LRS          # Premium_LRS | StandardSSD_LRS | Standard_LRS | UltraSSD_LRS
+  cachingMode: ReadOnly         # None | ReadOnly (consigliato per DB) | ReadWrite
+  fsType: ext4                  # ext4 (default) | xfs
+reclaimPolicy: Retain           # Retain = disco conservato alla cancellazione PVC (produzione)
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true      # Permette oc patch pvc per aumentare la dimensione
+---
+# StorageClass azurefile-csi — Azure Files Standard LRS
+# Provisioner: file.csi.azure.com
+# AccessModes supportati: ReadWriteOnce, ReadWriteMany, ReadOnlyMany
+# VolumeBindingMode: Immediate → PVC va in Bound subito senza attendere il Pod
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azurefile-csi-standard
+provisioner: file.csi.azure.com
+parameters:
+  skuName: Standard_LRS         # Standard_LRS | Premium_LRS (per IOPS elevati)
+  protocol: smb                 # smb (default) | nfs (richiede Premium e VNet integrata)
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - dir_mode=0777               # Permessi directory nel container
+  - file_mode=0777              # Permessi file nel container
+  - uid=1000                    # UID owner (adattare all'UID del processo nel container)
+  - gid=1000                    # GID owner
+  - mfsymlinks                  # Abilita symlink su SMB
+  - cache=strict                # Comportamento cache: strict | none | loose
+
+---
+
+
+
+# Verifica le StorageClass disponibili nel cluster:
+#   kubectl get storageclass
+# Kubernetes ha di default: 'standard' (hostpath provisioner)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-pvc
+  namespace: prj-antonio-minelli
+  labels:
+    scenario: volume-dynamic
+  annotations:
+    # Forza la creazione immediata del PV (senza aspettare un pod)
+    volume.kubernetes.io/selected-node: ""
+spec:
+  # Usa la StorageClass di default di Kubernetes
+  storageClassName: azurefile-csi-standard 
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dynamic-pvc-app
+  namespace: prj-antonio-minelli
+  labels:
+    app: dynamic-pvc-app
+    scenario: volume-dynamic
+spec:
+  replicas: 1        # RWO: solo 1 replica può scrivere su questo volume
+  selector:
+    matchLabels:
+      app: dynamic-pvc-app
+  template:
+    metadata:
+      labels:
+        app: dynamic-pvc-app
+        scenario: volume-dynamic
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/nginx/html/data
+          command: ["sh", "-c"]
+          args:
+            - |
+              # Crea una pagina che si aggiorna a ogni riavvio
+              mkdir -p /usr/share/nginx/html/data
+              BOOT=$(($(cat /usr/share/nginx/html/data/boots.txt 2>/dev/null || echo 0) + 1))
+              echo $BOOT > /usr/share/nginx/html/data/boots.txt
+              cat > /usr/share/nginx/html/index.html << EOF
+              <h1>Dynamic PVC Demo</h1>
+              <p>Boots: $BOOT</p>
+              <p>Hostname: $HOSTNAME</p>
+              <p>Ora: $(date)</p>
+              EOF
+              echo "Boot numero $BOOT. Avvio nginx..."
+              nginx -g "daemon off;"
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dynamic-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dynamic-pvc-svc
+  namespace: prj-antonio-minelli
+  labels:
+    scenario: volume-dynamic
+spec:
+  selector:
+    app: dynamic-pvc-app
+  ports:
+    - port: 80
+      targetPort: 80
