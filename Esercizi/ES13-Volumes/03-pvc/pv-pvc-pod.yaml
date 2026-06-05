@@ -10,15 +10,19 @@ metadata:
     type: local
     scenario: volume-pvc
 spec:
-  storageClassName: manual
-  capacity:
-    storage: 256Mi
+  storageClassName: managed-csi
+  #capacity:
+  #  storage: 256Mi
   accessModes:
     - ReadWriteOnce          # RWO: un solo nodo alla volta
   persistenceReclaimPolicy: Retain  # non cancella i dati alla release del PVC
   hostPath:
     path: /tmp/k8s-pv-demo         # percorso sul nodo kubernetes
     type: DirectoryOrCreate
+  resources:
+    requests:
+      storage: 256Mi
+  volumeMode: Filesystem
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
