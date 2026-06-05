@@ -55,9 +55,17 @@ metadata:
     scenario: volume-pvc
 spec:
   restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   containers:
     - name: writer
       image: busybox:1.36
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
       command: ["sh", "-c"]
       args:
         - |
