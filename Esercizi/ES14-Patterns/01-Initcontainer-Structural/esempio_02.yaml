@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-migration
+  namespace: prj-antonio-minelli
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+
+  template:
+    metadata:
+      labels:
+        app: demo-app
+
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      initContainers:
+        - name: db-migrate
+          image: registry.access.redhat.com/ubi9/ubi-minimal
+
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "===> Avvio migrazione DB"
+
+              # install client postgres (simulazione)
+              microdnf install -y postgresql || true
+
+              echo "Eseguo migration SQL..."
+
+              PGPASSWORD=$DB_PASSWORD psql \
+                -h $DB_HOST \
+                -U $DB_USER \
+                -d $DB_NAME \
+                -c "CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, message TEXT);"
+
+              echo "Migration completata"
+
+          env:
+            - name: DB_HOST
+              value: "postgres-service"
+            - name: DB_NAME
+              value: "appdb"
+            - name: DB_USER
+              value: "appuser"
+            - name: DB_PASSWORD
+              value: "apppassword"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+
+      # 🟢 MAIN CONTAINER (app)
+      containers:
+        - name: app
+          image: registry.access.redhat.com/ubi9/ubi-minimal
+
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "===> App partita"
+
+              while true; do
+                echo "Scrivo su DB..."
+                sleep 10
+              done
+
+          env:
+            - name: DB_HOST
+              value: "postgres-service"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+
+          ports:
+            - containerPort: 8080
