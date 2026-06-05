@@ -1,38 +1,43 @@
 # Scenario 03 — PersistentVolume + PersistentVolumeClaim
 # Provisioning statico con hostPath 
 # In produzione si usa dynamic provisioning con StorageClass.
+
+# PVC con managed-csi (Azure Disk, RWO)
+# La PVC rimane in Pending finché un Pod non la richiede (WaitForFirstConsumer).
+# Usare con Pod, Deployment (replicas: 1) o StatefulSet.
+
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo-pv2
   namespace: prj-antonio-minelli
   labels:
     type: local
     scenario: volume-pvc
 spec:
   storageClassName: managed-csi
-  #capacity:
-  #  storage: 256Mi
+  capacity:
+    storage: 256Mi
   accessModes:
     - ReadWriteOnce          # RWO: un solo nodo alla volta
   persistenceReclaimPolicy: Retain  # non cancella i dati alla release del PVC
   hostPath:
     path: /tmp/k8s-pv-demo         # percorso sul nodo kubernetes
     type: DirectoryOrCreate
-  resources:
-    requests:
-      storage: 256Mi
   volumeMode: Filesystem
 ---
+# PVC con azurefile-csi (Azure Files, RWX)
+# La PVC va in Bound immediatamente (Immediate binding).
+# Usare con Deployment multi-replica o Job che condividono file.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo-pvc-1
   namespace: prj-antonio-minelli
   labels:
     scenario: volume-pvc
 spec:
-  storageClassName: manual
+  storageClassName: managed-csi   # deve corrispondere al PV (o essere omesso se PV non specifica storageClass)
   accessModes:
     - ReadWriteOnce
   resources:
@@ -89,4 +94,4 @@ spec:
   volumes:
     - name: data-vol
       persistentVolumeClaim:
-        claimName: demo-pvc   # riferimento al PVC
+        claimName: demo-pvc-1   # riferimento al PVC
