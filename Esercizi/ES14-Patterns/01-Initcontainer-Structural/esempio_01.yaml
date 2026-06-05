@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: initcontainer-demo
+  namespace: prj-antonio-minelli
+  labels:
+    app: initcontainer-demo
+    scenario: initcontainer-structural
+spec:
+  restartPolicy: Never
+  
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  initContainers:
+    - name: init-permissions
+      image: registry.access.redhat.com/ubi9/ubi-minimal
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "=========================================="
+          echo "=== Init Container: setup iniziale ==="
+          
+          echo "Creo cartelle"
+          mkdir -p /data/log /data/config
+
+          echo "Imposto permessi..."
+          chmod -R 775 /data || true
+
+          echo "Creazione file di configurazione di esempio..."
+          echo "initialized at $(date)" > /data/config/init.txt
+
+          echo "Contenuto iniziale"
+          ls -la /data/
+          cat /data/config/init.txt
+
+          echo "Init container completato. Il container principale potrà accedere a /data/ con i permessi corretti."
+          echo "=========================================="
+                  
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
+
+  containers:
+    - name: main-app
+      image: registry.access.redhat.com/ubi9/ubi-minimal
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "=== Container Principale: verifica dati e permessi ==="
+          echo ""
+          echo "Contenuto di /data/ (dovrebbe essere popolato dall'init container):"
+          ls -la /data/
+          echo ""
+          echo "Contenuto di /data/config/init.txt:"
+          cat /data/config/init.txt 2>/dev/null || echo "(file non trovato)"
+          echo ""
+          echo "Il container principale ha accesso a /data/ con i permessi impostati dall'init container."
+          df -h /data
+          sleep 3600
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
+      resources:
+        requests: { cpu: 50m, memory: 32Mi }  
+        limits:   { cpu: 100m, memory: 64Mi }
+
+  volumes:
+    - name: shared-data
+      emptyDir: {}
